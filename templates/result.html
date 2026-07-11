@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Result - NeuroScan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo-link">
+                <i class="fa-solid fa-brain logo-icon"></i>
+                <span>NeuroScan</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/predict">Upload Scan</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about">About</a></li>
+                <li>
+                    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <div class="glass-card">
+            <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <a href="/predict" class="btn-secondary" style="padding: 0.5rem 1.2rem; font-size: 0.9rem;">
+                    <i class="fa-solid fa-arrow-left"></i> Run Another Scan
+                </a>
+                <a href="/download_report/{{ record.id }}" class="btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">
+                    <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+                </a>
+            </div>
+
+            <!-- Results Grid -->
+            <div class="results-grid">
+                <!-- Visualizations Panel -->
+                <div class="result-image-panel">
+                    <h3 class="gradient-text"><i class="fa-solid fa-images"></i> Visualizations</h3>
+                    <div class="result-mri-compare">
+                        <div class="compare-card">
+                            <img src="{{ url_for('static', filename=record.original_image_path.replace('static/', '')) }}" alt="Original MRI">
+                            <div class="compare-label">Original MRI Scan</div>
+                        </div>
+                        <div class="compare-card">
+                            <img src="{{ url_for('static', filename=record.gradcam_image_path.replace('static/', '')) }}" alt="Grad-CAM Overlay">
+                            <div class="compare-label">Grad-CAM Heatmap</div>
+                        </div>
+                    </div>
+                    <div class="stat-small-card" style="background: rgba(6, 182, 212, 0.02); border-color: rgba(6, 182, 212, 0.1);">
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                            <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> 
+                            <b>Explainable AI (Grad-CAM):</b> Red regions highlight areas of interest where the deep learning model focused its convolutional filter activations to arrive at the final diagnosis classification.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Data Panel -->
+                <div class="result-data-panel">
+                    <div class="result-header">
+                        {% if record.predicted_class == 'No Tumor' %}
+                            <span class="result-tag tag-notumor"><i class="fa-solid fa-shield-halved"></i> {{ record.predicted_class }}</span>
+                        {% else %}
+                            <span class="result-tag tag-tumor"><i class="fa-solid fa-triangle-exclamation"></i> {{ record.predicted_class }}</span>
+                        {% endif %}
+                        <h2 style="font-size: 2.2rem; line-height: 1.2; margin-top: 0.5rem;">AI Detection Result</h2>
+                        <p style="color: var(--text-secondary);">Categorized using deep neural network representation learning.</p>
+                        
+                        <div class="confidence-meter-container">
+                            <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>Confidence Score</span>
+                                <span class="gradient-text" style="font-size: 1.2rem;">{{ (record.confidence * 100) | round(2) }}%</span>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: {{ record.confidence * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Probabilities list -->
+                    <div>
+                        <h4 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-simple"></i> Class Probability Distribution</h4>
+                        <div class="probability-list">
+                            {% for cls, prob in record.probabilities.items() %}
+                                {% set isActive = (cls == record.predicted_class) %}
+                                <div class="prob-item">
+                                    <div class="prob-labels" style="{{ 'font-weight: 700;' if isActive else '' }}">
+                                        <span>{{ cls }}</span>
+                                        <span>{{ (prob * 100) | round(2) }}%</span>
+                                    </div>
+                                    <div class="prob-bar">
+                                        <div class="prob-fill {{ 'active' if isActive else '' }}" style="width: {{ prob * 100 }}%"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Scan metadata details -->
+                    <div class="stats-card-group">
+                        <div class="stat-small-card">
+                            <div class="label"><i class="fa-solid fa-file-image"></i> Scan Filename</div>
+                            <div class="val" style="word-break: break-all; font-size: 0.95rem;">{{ record.image_name }}</div>
+                        </div>
+                        <div class="stat-small-card">
+                            <div class="label"><i class="fa-solid fa-stopwatch"></i> Processing Time</div>
+                            <div class="val">{{ record.processing_time | round(4) }}s</div>
+                        </div>
+                        <div class="stat-small-card">
+                            <div class="label"><i class="fa-solid fa-calendar-day"></i> Scan Date</div>
+                            <div class="val">{{ record.date }}</div>
+                        </div>
+                        <div class="stat-small-card">
+                            <div class="label"><i class="fa-solid fa-clock"></i> Scan Time</div>
+                            <div class="val">{{ record.time }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer alert -->
+            <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.05); margin-top: 3rem; margin-bottom: 0;">
+                <p style="font-size: 0.85rem; text-align: center; font-weight: 500; color: var(--accent-red);">
+                    <i class="fa-solid fa-triangle-exclamation"></i> 
+                    <b>EDUCATIONAL DISCLAIMER:</b> This diagnostic result is automatically generated by an artificial intelligence model. It does NOT constitute medical diagnosis or medical advice. Please consult with a certified radiologist or doctor for professional interpretation of your MRI scans.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; {{ now.year }} NeuroScan System. For educational and portfolio demonstration purposes only.</p>
+    </footer>
+
+    <script>
+        // Theme toggle
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('i');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'light') { icon.classList.replace('fa-moon', 'fa-sun'); }
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+</html>

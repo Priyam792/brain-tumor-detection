@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroScan - Brain Tumor Detection & Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo-link">
+                <i class="fa-solid fa-brain logo-icon"></i>
+                <span>NeuroScan</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="/predict">Upload Scan</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about">About</a></li>
+                <li>
+                    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Hero -->
+    <main class="main-content">
+        <!-- Hero Grid -->
+        <section class="hero-section">
+            <div class="hero-text">
+                <h1>AI-Powered <span class="gradient-text">Brain Tumor Detection</span> & Explainable Analysis</h1>
+                <p>Upload a T1-weighted contrast-enhanced brain MRI scan to instantly classify it into one of four classes: Glioma, Meningioma, Pituitary Tumor, or No Tumor. Get immediate Grad-CAM visual explanations and download professional PDF reports.</p>
+                <div class="hero-cta">
+                    <a href="/predict" class="btn-primary">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload MRI Scan
+                    </a>
+                    <a href="/about" class="btn-secondary">Learn More</a>
+                </div>
+            </div>
+            <div class="hero-img-container">
+                <div class="scan-animation-bar"></div>
+                <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80&w=600" alt="Brain MRI Scan preview" class="hero-mri-preview">
+            </div>
+        </section>
+
+        <!-- Core Features -->
+        <section class="features-grid">
+            <div class="glass-card feature-card">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </div>
+                <h3>Advanced CNNs</h3>
+                <p>Leverages custom Convolutional Neural Networks and Transfer Learning (MobileNetV2, EfficientNetB0) to achieve clinical-grade classification accuracy.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-eye"></i>
+                </div>
+                <h3>Explainable AI (Grad-CAM)</h3>
+                <p>Visualizes the exact region of the MRI scan the model focused on. Generates interactive heatmaps overlaying raw scan data.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <h3>Automated PDF Reports</h3>
+                <p>Instantly compiles predictions, confidence scores, probability distributions, and Grad-CAM visualizations into a shareable medical report.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; {{ now.year }} NeuroScan System. For educational and portfolio demonstration purposes only.</p>
+    </footer>
+
+    <script>
+        // Simple theme toggle handler
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('i');
+        
+        // Check for saved theme preference
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'light') {
+            icon.classList.replace('fa-moon', 'fa-sun');
+        }
+        
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+</html>

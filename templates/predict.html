@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Scan - NeuroScan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo-link">
+                <i class="fa-solid fa-brain logo-icon"></i>
+                <span>NeuroScan</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/predict" class="active">Upload Scan</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about">About</a></li>
+                <li>
+                    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <div class="upload-container">
+            <div class="glass-card">
+                <h2 class="gradient-text" style="font-size: 2rem; text-align: center; margin-bottom: 1.5rem;">Upload Brain MRI Scan</h2>
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Ensure your image is a clear, contrast-enhanced T1-weighted brain MRI scan (JPG, JPEG, or PNG formats only).</p>
+                
+                <!-- Error Banner -->
+                <div id="error-banner" class="alert alert-error" style="display: none;"></div>
+
+                <form id="upload-form" method="POST" enctype="multipart/form-data">
+                    <!-- Model Selection -->
+                    <div class="model-selection-group">
+                        <label for="model-select"><i class="fa-solid fa-gears"></i> Select Classification Model</label>
+                        <select class="form-select" name="model_name" id="model-select">
+                            <option value="Best_Model" selected>Auto-Select Best Model (Recommended: {{ best_model }})</option>
+                            <option value="MobileNetV2">MobileNetV2 (Transfer Learning)</option>
+                            <option value="Custom_CNN">Custom CNN</option>
+                            <option value="EfficientNetB0">EfficientNetB0 (Transfer Learning)</option>
+                        </select>
+                    </div>
+
+                    <!-- Drag & Drop Zone -->
+                    <div class="upload-area" id="drop-zone">
+                        <input type="file" name="mri_image" id="file-input" accept=".png, .jpg, .jpeg" style="display: none;">
+                        <i class="fa-solid fa-folder-open upload-icon"></i>
+                        <h4 style="margin-bottom: 0.5rem; font-size: 1.2rem;">Drag and drop MRI scan here</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">or click to browse files</p>
+                        <button type="button" class="btn-secondary" id="browse-btn">Browse Files</button>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="image-preview-container" id="preview-container">
+                        <img src="" alt="MRI Preview" id="mri-preview-img">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button type="submit" class="btn-primary" id="submit-btn" disabled style="opacity: 0.6; cursor: not-allowed;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Run AI Diagnosis
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loader-overlay">
+        <div class="brain-loader">
+            <div class="brain-glow"></div>
+            <i class="fa-solid fa-brain loader-icon"></i>
+        </div>
+        <div class="loading-text gradient-text">SCANNING MRI IMAGE</div>
+        <div class="loading-sub">Running deep learning classification and Grad-CAM calculations...</div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; {{ now.year }} NeuroScan System. For educational and portfolio demonstration purposes only.</p>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImg = document.getElementById('mri-preview-img');
+        const submitBtn = document.getElementById('submit-btn');
+        const uploadForm = document.getElementById('upload-form');
+        const loaderOverlay = document.getElementById('loader-overlay');
+        const errorBanner = document.getElementById('error-banner');
+
+        // Theme toggle
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('i');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'light') { icon.classList.replace('fa-moon', 'fa-sun'); }
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Trigger file input
+        browseBtn.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('click', (e) => {
+            if (e.target !== browseBtn) fileInput.click();
+        });
+
+        // Drag & Drop handlers
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // Preview file
+        function handleFileSelect(file) {
+            errorBanner.style.display = 'none';
+            if (!file.type.match('image.*')) {
+                showError("Please upload an image file (JPG, JPEG, or PNG).");
+                resetForm();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function showError(message) {
+            errorBanner.innerText = message;
+            errorBanner.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            fileInput.value = '';
+            previewImg.src = '';
+            previewContainer.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'not-allowed';
+        }
+
+        // Form Submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorBanner.style.display = 'none';
+            
+            const formData = new FormData(uploadForm);
+            
+            // Show scanning overlay
+            loaderOverlay.style.display = 'flex';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Redirect to result page
+                    window.location.href = data.redirect_url;
+                } else {
+                    loaderOverlay.style.display = 'none';
+                    showError(data.error || "An error occurred during prediction.");
+                }
+            } catch (err) {
+                loaderOverlay.style.display = 'none';
+                showError("Failed to connect to the server. Please verify your connection.");
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

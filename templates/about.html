@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About System - NeuroScan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo-link">
+                <i class="fa-solid fa-brain logo-icon"></i>
+                <span>NeuroScan</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/predict">Upload Scan</a></li>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about" class="active">About</a></li>
+                <li>
+                    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content" style="max-width: 900px;">
+        <h2 class="gradient-text" style="font-size: 2.2rem; margin-bottom: 2rem; text-align: center;"><i class="fa-solid fa-circle-info"></i> About NeuroScan System</h2>
+        
+        <!-- About the Project -->
+        <section class="glass-card" style="padding: 2.5rem;">
+            <h3>Project Overview</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                NeuroScan is a production-quality medical imaging assistant that uses deep convolutional neural networks to classify contrast-enhanced T1-weighted brain MRI scans. It classifies inputs into four distinct classes representing three common types of brain tumors, or a healthy normal scan.
+            </p>
+            <p style="color: var(--text-secondary);">
+                Additionally, the application integrates Explainable AI (XAI) using Gradient-weighted Class Activation Mapping (Grad-CAM). Grad-CAM computes activation maps to show exactly where the deep network focused to make its prediction, building transparency and trust in deep learning diagnosis.
+            </p>
+        </section>
+
+        <!-- Tumor Types -->
+        <section class="glass-card" style="padding: 2.5rem;">
+            <h3>Brain Tumor Categories</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
+                <div style="border-left: 3px solid var(--accent-red); padding-left: 1rem;">
+                    <h4 style="margin-bottom: 0.3rem; font-size: 1.1rem;">Glioma</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        Gliomas are primary brain tumors that begin in the glial cells (cells that surround and support nerve cells). They occur in the brain and spinal cord, and their aggressiveness varies from slow-growing to rapid (glioblastoma).
+                    </p>
+                </div>
+                <div style="border-left: 3px solid var(--accent-blue); padding-left: 1rem;">
+                    <h4 style="margin-bottom: 0.3rem; font-size: 1.1rem;">Meningioma</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        Meningiomas arise from the meninges—the three layers of membranes that shield the brain and spinal cord. They are the most common primary brain tumor and are typically benign and slow-growing.
+                    </p>
+                </div>
+                <div style="border-left: 3px solid #818cf8; padding-left: 1rem;">
+                    <h4 style="margin-bottom: 0.3rem; font-size: 1.1rem;">Pituitary Tumor</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        These tumors grow in the pituitary gland—the small organ located at the base of the brain that regulates hormones. Most pituitary tumors are non-cancerous (adenomas) but can disrupt normal endocrine functions.
+                    </p>
+                </div>
+                <div style="border-left: 3px solid var(--accent-emerald); padding-left: 1rem;">
+                    <h4 style="margin-bottom: 0.3rem; font-size: 1.1rem;">No Tumor (Healthy Scan)</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        Represents a healthy MRI scan with no detectable signs of Glioma, Meningioma, or Pituitary masses.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Explainable AI -->
+        <section class="glass-card" style="padding: 2.5rem;">
+            <h3>Explainable AI: How Grad-CAM Works</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Neural networks are often called "black boxes" because it is difficult to understand how they arrive at a decision. To resolve this, NeuroScan uses <b>Grad-CAM (Gradient-weighted Class Activation Mapping)</b>.
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Grad-CAM uses the gradients of any target concept (such as the predicted class "Glioma") flowing into the final convolutional layer of the network. It calculates a coarse localization map highlighting the important regions in the image.
+            </p>
+            <p style="color: var(--text-secondary);">
+                By superimposing this heatmap (using a Jet colormap) over the original grayscale MRI scan, clinicians can visually verify that the model is making its prediction based on the actual tumor location, rather than noise or background artifacts.
+            </p>
+        </section>
+
+        <!-- Model Architectures -->
+        <section class="glass-card" style="padding: 2.5rem;">
+            <h3>Classification Architectures Compared</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
+                <div>
+                    <h4 style="margin-bottom: 0.3rem;"><i class="fa-solid fa-microchip"></i> 1. Custom CNN</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        A convolutional neural network built from scratch containing 4 convolutional blocks (with increasing filters: 32, 64, 128, 256), max pooling layers, dropout for regularization, and fully connected dense layers.
+                    </p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 0.3rem;"><i class="fa-solid fa-network-wired"></i> 2. MobileNetV2</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        A lightweight model designed for mobile applications utilizing depthwise separable convolutions. We apply transfer learning, freezing MobileNetV2's feature extraction weights pre-trained on ImageNet, and appending a custom classification head.
+                    </p>
+                </div>
+                <div>
+                    <h4 style="margin-bottom: 0.3rem;"><i class="fa-solid fa-bolt"></i> 3. EfficientNetB0</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        A state-of-the-art CNN that scales depth, width, and resolution uniformly using compound coefficients. We use transfer learning, freezing its pre-trained ImageNet base and training a custom classification block on top.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Disclaimer -->
+        <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.05); margin-bottom: 2rem;">
+            <p style="font-size: 0.85rem; text-align: center; font-weight: 500; color: var(--accent-red);">
+                <i class="fa-solid fa-triangle-exclamation"></i> 
+                <b>IMPORTANT MEDICAL DISCLAIMER:</b> NeuroScan is an educational, open-source AI project. The model prediction accuracy, Grad-CAM overlays, and reports are not validated for clinical use. They must not replace diagnostic opinions from board-certified radiologists, oncologists, or physicians.
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; {{ now.year }} NeuroScan System. For educational and portfolio demonstration purposes only.</p>
+    </footer>
+
+    <script>
+        // Theme toggle
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('i');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'light') { icon.classList.replace('fa-moon', 'fa-sun'); }
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+</html>
