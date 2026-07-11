@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import urllib.request
 from pathlib import Path
 import numpy as np
 import tensorflow as tf
@@ -20,6 +21,28 @@ CLASS_DISPLAY_NAMES = {
     "notumor": "No Tumor",
     "pituitary": "Pituitary Tumor"
 }
+
+def download_model_if_missing(filename: str, models_dir: Path):
+    """
+    Downloads a missing model file from GitHub Releases.
+    """
+    model_path = models_dir / filename
+    if model_path.exists():
+        return
+        
+    models_dir.mkdir(parents=True, exist_ok=True)
+    # Target URL of the v1.0.0 GitHub release
+    url = f"https://github.com/Priyam792/brain-tumor-detection/releases/download/v1.0.0/{filename}"
+    print(f"Model file {filename} not found locally.")
+    print(f"Attempting to download from GitHub Releases: {url}...")
+    
+    try:
+        # Disable SSL warnings or verify depending on environment. Github uses valid SSL.
+        urllib.request.urlretrieve(url, str(model_path))
+        print(f"Successfully downloaded {filename} to {model_path}")
+    except Exception as e:
+        print(f"Warning: Could not download {filename} from remote release: {e}")
+        print("The system will attempt to look for fallback local model files.")
 
 def get_best_model_name(models_dir: Path):
     """
@@ -55,6 +78,10 @@ def load_prediction_model(model_name: str, models_dir: Path):
     }
     
     filename = model_mapping.get(model_name, "best_mobilenetv2_transfer.keras")
+    
+    # Attempt download if missing
+    download_model_if_missing(filename, models_dir)
+    
     model_path = models_dir / filename
     
     # Fallback to any available keras file if the requested one doesn't exist
@@ -65,7 +92,7 @@ def load_prediction_model(model_name: str, models_dir: Path):
             model_path = keras_files[0]
             print(f"Using fallback model: {model_path.name}")
         else:
-            raise FileNotFoundError(f"No trained Keras models found in {models_dir.resolve()}")
+            raise FileNotFoundError(f"No trained Keras models found in {models_dir.resolve()}. Please download the models or run training first.")
             
     return tf.keras.models.load_model(str(model_path))
 
