@@ -3,108 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroScan - Brain Tumor Detection & Analysis</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Brain Tumor Detection</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Brain Tumor Detection System</h1>
+            <p class="subtitle">Upload a brain MRI scan to predict the tumor class (glioma, meningioma, pituitary, or no tumor) using a custom deep Convolutional Neural Network (CNN).</p>
+        </header>
 
-    <!-- Header Navigation -->
-    <header>
-        <div class="nav-container">
-            <a href="/" class="logo-link">
-                <i class="fa-solid fa-brain logo-icon"></i>
-                <span>NeuroScan</span>
-            </a>
-            <ul class="nav-links">
-                <li><a href="/" class="active">Home</a></li>
-                <li><a href="/predict">Upload Scan</a></li>
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/history">History</a></li>
-                <li><a href="/about">About</a></li>
-                <li>
-                    <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
-                        <i class="fa-solid fa-moon"></i>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert-box">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="glass-card">
+            <!-- Loading Overlay -->
+            <div id="loading" class="loading-overlay">
+                <div class="spinner"></div>
+                <div class="loading-text">Analyzing MRI Scan...</div>
+            </div>
+
+            <form action="{{ url_for('index') }}" method="POST" enctype="multipart/form-data" id="upload-form">
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" name="mri_image" id="file-input" accept=".png, .jpg, .jpeg">
+                    <span class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                    <div class="upload-text">Drag and drop your MRI image here</div>
+                    <div class="upload-hint">Supported formats: PNG, JPG, JPEG (Max 16MB)</div>
+                </div>
+
+                <div class="file-details" id="file-details">
+                    <div class="file-info">
+                        <span style="color: var(--primary); font-size: 1.2rem;"><i class="fa-solid fa-file-image"></i></span>
+                        <span class="file-name" id="file-name">filename.jpg</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="change-file-btn" style="padding: 8px 16px; font-size: 0.9rem;">Change</button>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+                        <span>Analyze Scan</span>
+                        <i class="fa-solid fa-chevron-right"></i>
                     </button>
-                </li>
-            </ul>
+                </div>
+            </form>
         </div>
-    </header>
+    </div>
 
-    <!-- Main Hero -->
-    <main class="main-content">
-        <!-- Hero Grid -->
-        <section class="hero-section">
-            <div class="hero-text">
-                <h1>AI-Powered <span class="gradient-text">Brain Tumor Detection</span> & Explainable Analysis</h1>
-                <p>Upload a T1-weighted contrast-enhanced brain MRI scan to instantly classify it into one of four classes: Glioma, Meningioma, Pituitary Tumor, or No Tumor. Get immediate Grad-CAM visual explanations and download professional PDF reports.</p>
-                <div class="hero-cta">
-                    <a href="/predict" class="btn-primary">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload MRI Scan
-                    </a>
-                    <a href="/about" class="btn-secondary">Learn More</a>
-                </div>
-            </div>
-            <div class="hero-img-container">
-                <div class="scan-animation-bar"></div>
-                <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80&w=600" alt="Brain MRI Scan preview" class="hero-mri-preview">
-            </div>
-        </section>
-
-        <!-- Core Features -->
-        <section class="features-grid">
-            <div class="glass-card feature-card">
-                <div class="feature-icon-wrapper">
-                    <i class="fa-solid fa-magnifying-glass-chart"></i>
-                </div>
-                <h3>Advanced CNNs</h3>
-                <p>Leverages custom Convolutional Neural Networks and Transfer Learning (MobileNetV2, EfficientNetB0) to achieve clinical-grade classification accuracy.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon-wrapper">
-                    <i class="fa-solid fa-eye"></i>
-                </div>
-                <h3>Explainable AI (Grad-CAM)</h3>
-                <p>Visualizes the exact region of the MRI scan the model focused on. Generates interactive heatmaps overlaying raw scan data.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon-wrapper">
-                    <i class="fa-solid fa-file-pdf"></i>
-                </div>
-                <h3>Automated PDF Reports</h3>
-                <p>Instantly compiles predictions, confidence scores, probability distributions, and Grad-CAM visualizations into a shareable medical report.</p>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
     <footer>
-        <p>&copy; {{ now.year }} NeuroScan System. For educational and portfolio demonstration purposes only.</p>
+        <p>&copy; 2026 Brain Tumor Detection College Project | Powered by Flask & TensorFlow</p>
     </footer>
 
     <script>
-        // Simple theme toggle handler
-        const toggleBtn = document.getElementById('theme-toggle');
-        const icon = toggleBtn.querySelector('i');
-        
-        // Check for saved theme preference
-        const currentTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        if (currentTheme === 'light') {
-            icon.classList.replace('fa-moon', 'fa-sun');
-        }
-        
-        toggleBtn.addEventListener('click', () => {
-            let theme = document.documentElement.getAttribute('data-theme');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                icon.classList.replace('fa-moon', 'fa-sun');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                icon.classList.replace('fa-sun', 'fa-moon');
-                localStorage.setItem('theme', 'dark');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const fileDetails = document.getElementById('file-details');
+        const fileName = document.getElementById('file-name');
+        const changeFileBtn = document.getElementById('change-file-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const uploadForm = document.getElementById('upload-form');
+        const loadingOverlay = document.getElementById('loading');
+
+        // Drag and drop events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, e => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'var(--primary)';
+                dropzone.style.background = 'rgba(250, 84, 253, 0.05)';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, e => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'var(--border-color)';
+                dropzone.style.background = 'rgba(255, 255, 255, 0.01)';
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFiles(files[0]);
             }
+        });
+
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleFiles(fileInput.files[0]);
+            }
+        });
+
+        changeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        function handleFiles(file) {
+            fileName.textContent = file.name;
+            dropzone.style.display = 'none';
+            fileDetails.style.display = 'flex';
+            submitBtn.removeAttribute('disabled');
+        }
+
+        // Form submit
+        uploadForm.addEventListener('submit', () => {
+            loadingOverlay.style.display = 'flex';
         });
     </script>
 </body>

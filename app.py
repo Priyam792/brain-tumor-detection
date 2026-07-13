@@ -2,12 +2,11 @@ import os
 import json
 import secrets
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
-
-from db import init_db, insert_prediction, get_prediction_by_id, get_all_predictions, delete_prediction, get_analytics_summary
-from ml.predict_helper import predict_brain_tumor, get_best_model_name
-from report_generator import generate_pdf_report
+from PIL import Image
+import numpy as np
+import tensorflow as tf
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
@@ -16,191 +15,140 @@ app.secret_key = secrets.token_hex(16)
 PROJECT_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = PROJECT_DIR / "static" / "uploads"
 MODELS_DIR = PROJECT_DIR / "models"
-REPORTS_DIR = PROJECT_DIR / "static" / "reports"
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024 # 16 MB limit
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB limit
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+
+# Ensure directories exist
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Global variables to store model and class index mapping
+model = None
+class_indices = None
+invert_class_indices = None
+
+def load_ml_model():
+    global model, class_indices, invert_class_indices
+    model_path = MODELS_DIR / "best_brain_tumor_cnn.keras"
+    if not model_path.exists():
+        model_path = MODELS_DIR / "brain_tumor_cnn_final.keras"
+        
+    class_map_path = MODELS_DIR / "class_indices.json"
+    
+    if model_path.exists():
+        print(f"Loading model from {model_path}...")
+        model = tf.keras.models.load_model(str(model_path))
+    else:
+        print(f"Warning: Model not found at {model_path}.")
+        
+    if class_map_path.exists():
+        print(f"Loading class mapping from {class_map_path}...")
+        with open(class_map_path, "r", encoding="utf-8") as file:
+            class_indices = json.load(file)
+            # Invert class indices to mapping index -> class name
+            invert_class_indices = {v: k for k, v in class_indices.items()}
+    else:
+        # Fallback to standard order from notebook
+        class_indices = {"glioma": 0, "meningioma": 1, "notumor": 2, "pituitary": 3}
+        invert_class_indices = {v: k for k, v in class_indices.items()}
+
+# Load on startup
+load_ml_model()
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Ensure directories exist
-for folder in [UPLOAD_FOLDER, MODELS_DIR, REPORTS_DIR]:
-    folder.mkdir(parents=True, exist_ok=True)
+def predict_image(image_path):
+    # Preprocess image according to the notebook logic
+    img = Image.open(image_path)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    
+    # Resize to match network input shape
+    img = img.resize((224, 224))
+    
+    # Convert to array and normalize
+    img_array = np.array(img, dtype=np.float32) / 255.0
+    img_array = np.expand_dims(img_array, axis=0) # Add batch dimension
+    
+    # Run prediction
+    predictions = model.predict(img_array)[0]
+    predicted_idx = int(np.argmax(predictions))
+    predicted_class = invert_class_indices.get(predicted_idx, "Unknown")
+    confidence = float(predictions[predicted_idx])
+    
+    # Format class probabilities
+    probabilities = []
+    for idx, prob in enumerate(predictions):
+        class_name = invert_class_indices.get(idx, f"Class {idx}")
+        probabilities.append({
+            "class_name": class_name,
+            "probability": float(prob),
+            "percentage": f"{prob * 100:.2f}%"
+        })
+        
+    # Sort probabilities by highest confidence
+    probabilities = sorted(probabilities, key=lambda x: x["probability"], reverse=True)
+    
+    return {
+        "predicted_class": predicted_class,
+        "confidence": confidence,
+        "confidence_percentage": f"{confidence * 100:.2f}%",
+        "probabilities": probabilities
+    }
 
-# Initialize database
-init_db()
-
-@app.context_processor
-def inject_now():
-    from datetime import datetime
-    return {'now': datetime.utcnow()}
-
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
-    """Home / Landing page."""
-    return render_template("index.html")
-
-@app.route("/predict", methods=["GET", "POST"])
-def predict():
-    """Upload and predict brain tumor."""
     if request.method == "POST":
-        # Check if file is in request
+        # Check if file is provided
         if "mri_image" not in request.files:
-            return jsonify({"error": "No image file provided"}), 400
+            flash("No file part in the request", "error")
+            return redirect(request.url)
             
         file = request.files["mri_image"]
-        model_name = request.form.get("model_name", "Best_Model")
-        
         if file.filename == "":
-            return jsonify({"error": "No file selected"}), 400
+            flash("No file selected", "error")
+            return redirect(request.url)
             
         if file and allowed_file(file.filename):
+            # Save file securely
             filename = secure_filename(file.filename)
-            # Add unique prefix to avoid collisions
             unique_filename = f"{secrets.token_hex(8)}_{filename}"
             filepath = UPLOAD_FOLDER / unique_filename
             file.save(str(filepath))
             
+            # Reload model if it was missing on startup
+            global model
+            if model is None:
+                load_ml_model()
+                
+            if model is None:
+                flash("Model is not available. Please train the model first.", "error")
+                return redirect(request.url)
+                
             try:
-                # Run ML Prediction and Grad-CAM
-                result = predict_brain_tumor(
-                    image_path=str(filepath),
-                    model_name=model_name,
-                    models_dir=MODELS_DIR,
-                    outputs_dir=UPLOAD_FOLDER
+                # Run prediction
+                result = predict_image(str(filepath))
+                image_url = url_for("static", filename=f"uploads/{unique_filename}")
+                
+                return render_template(
+                    "result.html",
+                    image_url=image_url,
+                    result=result
                 )
-                
-                # Save details in SQLite database
-                original_img_rel = f"static/uploads/{unique_filename}"
-                prediction_id = insert_prediction(
-                    image_name=filename,
-                    predicted_class=result["predicted_class"],
-                    confidence=result["confidence"],
-                    probabilities=result["probabilities"],
-                    processing_time=result["processing_time"],
-                    original_image_path=original_img_rel,
-                    gradcam_image_path=result["gradcam_image_path"]
-                )
-                
-                return jsonify({
-                    "success": True,
-                    "prediction_id": prediction_id,
-                    "redirect_url": url_for("result", prediction_id=prediction_id)
-                })
-                
             except Exception as e:
-                # Cleanup file if prediction failed
                 if filepath.exists():
                     os.remove(filepath)
-                import traceback
-                print(traceback.format_exc())
-                return jsonify({"error": f"Model inference failed: {str(e)}"}), 500
+                flash(f"Inference failed: {str(e)}", "error")
+                return redirect(request.url)
         else:
-            return jsonify({"error": "Invalid file type. Supported: JPG, JPEG, PNG"}), 400
+            flash("Invalid file type. Supported formats: PNG, JPG, JPEG", "error")
+            return redirect(request.url)
             
-    # GET request
-    best_model = get_best_model_name(MODELS_DIR)
-    
-    # Check if models exist to list them
-    models_available = []
-    if (MODELS_DIR / "best_custom_cnn.keras").exists():
-        models_available.append(("Custom_CNN", "Custom CNN"))
-    if (MODELS_DIR / "best_mobilenetv2_transfer.keras").exists():
-        models_available.append(("MobileNetV2", "MobileNetV2 (Transfer Learning)"))
-    if (MODELS_DIR / "best_efficientnetb0_transfer.keras").exists():
-        models_available.append(("EfficientNetB0", "EfficientNetB0 (Transfer Learning)"))
-        
-    return render_template("predict.html", best_model=best_model, models_available=models_available)
-
-@app.route("/result/<int:prediction_id>")
-def result(prediction_id):
-    """Detailed result page."""
-    record = get_prediction_by_id(prediction_id)
-    if not record:
-        flash("Record not found", "error")
-        return redirect(url_for("predict"))
-        
-    return render_template("result.html", record=record)
-
-@app.route("/dashboard")
-def dashboard():
-    """Analytics dashboard page."""
-    analytics = get_analytics_summary()
-    
-    # Model comparison info
-    comparison_path = MODELS_DIR / "model_comparison.json"
-    comparison_data = None
-    if comparison_path.exists():
-        with open(comparison_path, "r") as f:
-            comparison_data = json.load(f)
-            
-    return render_template("dashboard.html", analytics=analytics, comparison_data=comparison_data)
-
-@app.route("/history")
-def history():
-    """Searchable prediction history table."""
-    page = request.args.get("page", 1, type=int)
-    search_query = request.args.get("q", "", type=str)
-    limit = 10
-    offset = (page - 1) * limit
-    
-    records, total_count = get_all_predictions(search_query, limit, offset)
-    total_pages = (total_count + limit - 1) // limit
-    
-    return render_template(
-        "history.html",
-        records=records,
-        page=page,
-        total_pages=total_pages,
-        total_count=total_count,
-        search_query=search_query
-    )
-
-@app.route("/delete/<int:prediction_id>", methods=["POST"])
-def delete(prediction_id):
-    """Delete prediction record and its files."""
-    row = delete_prediction(prediction_id)
-    if row:
-        orig_path = PROJECT_DIR / row["original_image_path"]
-        gradcam_path = PROJECT_DIR / row["gradcam_image_path"]
-        
-        # Remove files from disk if they exist
-        if orig_path.exists():
-            os.remove(orig_path)
-        if gradcam_path.exists():
-            os.remove(gradcam_path)
-            
-        flash("Scan record deleted successfully.", "success")
-    else:
-        flash("Record not found.", "error")
-        
-    return redirect(url_for("history"))
-
-@app.route("/download_report/<int:prediction_id>")
-def download_report(prediction_id):
-    """Generate and download PDF report."""
-    record = get_prediction_by_id(prediction_id)
-    if not record:
-        return "Record not found", 404
-        
-    pdf_filename = f"brain_tumor_report_{record['id']}.pdf"
-    pdf_path = REPORTS_DIR / pdf_filename
-    
-    try:
-        generate_pdf_report(record, str(pdf_path))
-        return send_file(str(pdf_path), as_attachment=True, download_name=pdf_filename)
-    except Exception as e:
-        import traceback
-        print(traceback.format_exc())
-        return f"Failed to generate report: {str(e)}", 500
-
-@app.route("/about")
-def about():
-    """About page."""
-    return render_template("about.html")
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
