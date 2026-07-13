@@ -5,3 +5,7 @@ __pycache__/
 .env
 models/*.keras
 *.keras
+*.db
+*.pdf
+static/uploads/*
+!static/uploads/.gitkeep
