@@ -45,18 +45,6 @@ The project demonstrates a complete deep learning workflow — from dataset prep
 
 ---
 
-## 🎥 Demo
-
-<div align="center">
-
-*Add a screenshot or GIF of the upload page and prediction result here, e.g.*
-
-`docs/screenshots/upload.png` · `docs/screenshots/result.png`
-
-</div>
-
----
-
 ## ✨ Features
 
 - 🧠 Custom CNN model built with TensorFlow/Keras
@@ -77,7 +65,7 @@ The project demonstrates a complete deep learning workflow — from dataset prep
 |-----------|------------|
 | Language | Python 3.10+ |
 | Backend | Flask |
-| Frontend | HTML5, CSS3, JavaScript |
+| Frontend | HTML5, CSS3 |
 | Deep Learning | TensorFlow, Keras |
 | Data Processing | NumPy |
 | Image Processing | Pillow |
@@ -247,32 +235,6 @@ A complete, self-contained Jupyter Notebook is included, covering:
 - Performance evaluation
 
 📂 `notebooks/01_brain_tumor_cnn.ipynb`
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Grad-CAM visualization for model explainability
-- [ ] Transfer learning (MobileNetV2 / EfficientNet)
-- [ ] Prediction history database
-- [ ] Docker support
-- [ ] Cloud deployment (Render / AWS / GCP)
-- [ ] REST API for programmatic access
-- [ ] User authentication
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m "Add your feature"`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
-Please open an issue first for major changes to discuss what you'd like to add.
 
 ---
 
