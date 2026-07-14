@@ -8,10 +8,8 @@
 ![Flask](https://img.shields.io/badge/Flask-Web%20Framework-black?logo=flask)
 ![HTML5](https://img.shields.io/badge/HTML5-orange?logo=html5)
 ![CSS3](https://img.shields.io/badge/CSS3-blue?logo=css3)
-![JavaScript](https://img.shields.io/badge/JavaScript-yellow?logo=javascript)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 ![Made with ❤️](https://img.shields.io/badge/Made%20with-Python-blue)
 
 **An AI-powered Brain MRI classification web app built with TensorFlow/Keras, Flask, and a custom CNN.**
