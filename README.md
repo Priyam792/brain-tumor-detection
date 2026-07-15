@@ -90,10 +90,10 @@ Full architecture details, training curves, and evaluation metrics are available
 >
 > | Metric | Score |
 > |--------|-------|
-> | Accuracy | xx.x% |
-> | Precision | xx.x% |
-> | Recall | xx.x% |
-> | F1-score | xx.x% |
+> | Accuracy | 84.22% |
+> | Precision | 84.16% |
+> | Recall | 84.22% |
+> | F1-score | 84.05% |
 
 ---
 
